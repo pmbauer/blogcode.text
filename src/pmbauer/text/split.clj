@@ -21,18 +21,21 @@
   ([l m r] (->Segment l m r))
   ([] (segment "" [] "")))
 
-(def ^:const C-ZERO (chunk))
-(def ^:const S-ZERO (segment))
+(def C-ZERO (chunk))
+(def S-ZERO (segment))
 
 (defn maybe-word [s]
   (if (str/blank? s)
     []
-    [s]))
+    [[s]]))
 
 (defn wordstate->words [{:keys [s l m r] :as word-state}]
-  (condp = (type word-state)
-    Chunk (maybe-word s)
-    Segment (concat (maybe-word l) m (maybe-word r))))
+  (reduce into []
+          (condp = (type word-state)
+            Chunk (maybe-word s)
+            Segment (reduce into [] [(maybe-word l)
+                                     m
+                                     (maybe-word r)]))))
 
 (defmulti plus #(map type %&))
 
@@ -54,29 +57,30 @@
 
 (defmethod plus [Segment Segment] [^Segment a ^Segment b]
   (segment (.-l a)
-           (vec (concat (.-m a)
-                          (maybe-word (str (.-r a) (.-l b)))
-                          (.-m b)))
+           (reduce into [] [(.-m a)
+                            (maybe-word (str (.-r a) (.-l b)))
+                            (.-m b)])
            (.-r b)))
 
-(def ^:const fjinvoke @#'r/fjinvoke)
-(def ^:const fjfork @#'r/fjfork)
-(def ^:const fjjoin @#'r/fjjoin)
-(def ^:const fjtask @#'r/fjtask)
+(def fjinvoke @#'r/fjinvoke)
+(def fjfork @#'r/fjfork)
+(def fjjoin @#'r/fjjoin)
+(def fjtask @#'r/fjtask)
 
 (defn foldstr [^String s n combinef sequential-reducef]
-  (cond
-   (empty? s) (combinef)
-   (<= (count s) n) (sequential-reducef s)
-   :else
-   (let [split (quot (count s) 2)
-         v1 (.substring s 0 split)
-         v2 (.substring s split (count s))
-         fc (fn [child] #(foldstr child n combinef sequential-reducef))]
-     (fjinvoke #(let [f1 (fc v1)
-                      t2 (fjtask (fc v2))]
-                  (fjfork t2)
-                  (combinef (f1) (fjjoin t2)))))))
+  (let [fc (fn [child] #(sequential-reducef child))
+        boundaries (partition 2 1 (range 0 (count s) n))
+        f-last (fc (.substring s (or (last (last boundaries)) 0) (count s)))
+        jobs (->> boundaries
+                  (map #(.substring s (first %) (second %)))
+                  (map fc)
+                  vec
+                  (#(conj % f-last)))]
+    (fjinvoke #(->> (map fjtask jobs)
+                    (map fjfork)
+                    doall
+                    (map fjjoin)
+                    (reduce combinef)))))
 
 (extend-protocol r/CollFold
   String
@@ -105,11 +109,15 @@
           (chunk last-split)
           (segment (first splits)
                    (->> (subvec splits 1 (- splitcount (if end-match? 0 1)))
-                        (remove str/blank?))
+                        (remove str/blank?)
+                        vec
+                        vector)
                    (if end-match? "" last-split)))))))
 
 (defn guess-chunk-size [s]
-  (/ (count s) (.availableProcessors (Runtime/getRuntime))))
+  (max (/ (count s)
+          (* 2 (.availableProcessors (Runtime/getRuntime))))
+       4096))
 
 (defn psplit
   ([^Pattern re s]

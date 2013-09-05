@@ -3,7 +3,8 @@
             [clojure.string :as str]
             [clojure.tools.namespace.repl :only [refresh]]
             [criterium.core :refer :all]
-            [pmbauer.text.split :refer [split psplit] :as split]
+            [pmbauer.text.split :refer [split psplit split-reducers guess-chunk-size]
+             :as split]
             [pmbauer.text.generator :refer [corpus]]))
 
 (comment
@@ -15,4 +16,4 @@
 (time (def text (corpus 1000000)))
 
 (with-progress-reporting (bench (def splits (into [] (split #"\s" text))) :verbose))
-(with-progress-reporting (bench (def splits (into [] (psplit #"\s" text))) :verbose)))
+(with-progress-reporting (bench (def splits (psplit #"\s" text)) :verbose)))

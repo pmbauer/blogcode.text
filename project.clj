@@ -6,4 +6,4 @@
                                   [org.clojure/data.generators "0.1.2"]
                                   [criterium "0.4.2"]]
                    :source-paths ["dev"]}}
-  :jvm-opts ^:replace ["-XX:-UseConcMarkSweepGC"])
+  :jvm-opts ^:replace ["-Xms8G" "-Xmx8G" "-XX:-UseConcMarkSweepGC"])
