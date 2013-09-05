@@ -14,5 +14,5 @@
 ;; at 16 bits per word 1 million words is 16 * ~10 * 1 million = ~19MB
 (time (def text (corpus 1000000)))
 
-(with-progress-reporting (bench (def splits (split #"\s" text)) :verbose))
-(with-progress-reporting (bench (def splits (psplit #"\s" text)) :verbose)))
+(with-progress-reporting (bench (def splits (into [] (split #"\s" text))) :verbose))
+(with-progress-reporting (bench (def splits (into [] (psplit #"\s" text))) :verbose)))

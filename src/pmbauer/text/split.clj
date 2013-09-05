@@ -54,9 +54,9 @@
 
 (defmethod plus [Segment Segment] [^Segment a ^Segment b]
   (segment (.-l a)
-           (concat (.-m a)
-                   (maybe-word (str (.-r a) (.-l b)))
-                   (.-m b))
+           (vec (concat (.-m a)
+                          (maybe-word (str (.-r a) (.-l b)))
+                          (.-m b)))
            (.-r b)))
 
 (def ^:const fjinvoke @#'r/fjinvoke)
@@ -94,7 +94,7 @@
      (wordstate->words (r/fold chunk-size plus reducer s))))
 
 (defn string->wordstate [^Pattern re ^String s]
-  (let [splits (.split re s)
+  (let [splits (str/split s re)
         splitcount (count splits)]
     (if (= 0 splitcount)
       S-ZERO
@@ -104,14 +104,12 @@
         (if (and (= 1 splitcount) (not end-match?))
           (chunk last-split)
           (segment (first splits)
-                   (->> (drop 1 splits)
-                        (take (- splitcount (if end-match? 1 2)))
+                   (->> (subvec splits 1 (- splitcount (if end-match? 0 1)))
                         (remove str/blank?))
                    (if end-match? "" last-split)))))))
 
 (defn guess-chunk-size [s]
-  (/ (count s)
-     (* 2 (.availableProcessors (Runtime/getRuntime)))))
+  (/ (count s) (.availableProcessors (Runtime/getRuntime))))
 
 (defn psplit
   ([^Pattern re s]
