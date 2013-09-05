@@ -1,6 +1,7 @@
 (ns user
   (:require [clojure.repl :refer :all]
             [clojure.string :as str]
+            [clojure.core.reducers :as r]
             [clojure.tools.namespace.repl :only [refresh]]
             [criterium.core :refer :all]
             [pmbauer.text.split :refer [split psplit split-reducers guess-chunk-size]
@@ -16,4 +17,5 @@
 (time (def text (corpus 1000000)))
 
 (with-progress-reporting (bench (def splits (into [] (split #"\s" text))) :verbose))
-(with-progress-reporting (bench (def splits (psplit #"\s" text)) :verbose)))
+(with-progress-reporting (bench (def splits (psplit #"\s" text)) :verbose))
+(with-progress-reporting (bench (def splits (split-reducers (guess-chunk-size text) text)) :verbose)))

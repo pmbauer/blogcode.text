@@ -27,15 +27,15 @@
 (defn maybe-word [s]
   (if (str/blank? s)
     []
-    [[s]]))
+    [s]))
 
 (defn wordstate->words [{:keys [s l m r] :as word-state}]
-  (reduce into []
-          (condp = (type word-state)
-            Chunk (maybe-word s)
-            Segment (reduce into [] [(maybe-word l)
-                                     m
-                                     (maybe-word r)]))))
+  (into []
+        (condp = (type word-state)
+          Chunk (maybe-word s)
+          Segment (reduce r/cat [(maybe-word l)
+                                 m
+                                 (maybe-word r)]))))
 
 (defmulti plus #(map type %&))
 
@@ -57,9 +57,9 @@
 
 (defmethod plus [Segment Segment] [^Segment a ^Segment b]
   (segment (.-l a)
-           (reduce into [] [(.-m a)
-                            (maybe-word (str (.-r a) (.-l b)))
-                            (.-m b)])
+           (reduce r/cat [(.-m a)
+                          (maybe-word (str (.-r a) (.-l b)))
+                          (.-m b)])
            (.-r b)))
 
 (def fjinvoke @#'r/fjinvoke)
@@ -109,9 +109,8 @@
           (chunk last-split)
           (segment (first splits)
                    (->> (subvec splits 1 (- splitcount (if end-match? 0 1)))
-                        (remove str/blank?)
-                        vec
-                        vector)
+                        (r/remove str/blank?)
+                        (into []))
                    (if end-match? "" last-split)))))))
 
 (defn guess-chunk-size [s]
