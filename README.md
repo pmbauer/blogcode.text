@@ -1,5 +1,5 @@
 =============================================
-code for [Guy Lewis Steele's Wordsplit and the Reducers](http://pmbauer.github.io/2013/09/03/gls-wordsplit-and-the-reducers)
+code for [Guy Lewis Steele's Wordsplit and the Reducers](https://bauer.codes/2013/09/03/gls-wordsplit-and-the-reducers)
 
 ## License
 
